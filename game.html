@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Hường Cute Adventure 🐔</title>
+<style>
+body { margin:0; overflow:hidden; font-family:sans-serif; }
+canvas { display:block; }
+#ui {
+ position:absolute; top:10px; left:50%; transform:translateX(-50%);
+ background:white; padding:12px 24px; border-radius:15px; text-align:center;
+ font-weight:bold; box-shadow:0 4px 10px rgba(0,0,0,0.2);
+}
+</style>
+</head>
+<body>
+<div id="ui"></div>
+<canvas id="game"></canvas>
+<script>
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let player = { x:100, y:300 };
+let lives = 3;
+let jumping = false;
+let jumpProgress = 0;
+let direction = 1;
+
+const goalX = 1000;
+
+const vocab = [
+ {q:"통화정책", a:"chính sách tiền tệ"},
+ {q:"금융안정", a:"ổn định tài chính"},
+ {q:"변동성", a:"biến động"},
+ {q:"외환시장", a:"thị trường ngoại hối"},
+ {q:"디지털화", a:"số hóa"},
+ {q:"위상", a:"vị thế"},
+ {q:"경제 구조개혁", a:"cải cách cơ cấu kinh tế"},
+ {q:"금융시스템", a:"hệ thống tài chính"},
+ {q:"국제유가", a:"giá dầu quốc tế"},
+ {q:"조기경보", a:"cảnh báo sớm"}
+];
+
+let shuffled = [...vocab].sort(()=>Math.random()-0.5);
+let currentIndex = 0;
+let answers = [];
+
+function newQuestion(){
+ if(lives <= 0){ alert("💀 Game Over"); location.reload(); }
+ if(currentIndex >= shuffled.length){ alert("🏆 Win!"); location.reload(); }
+ generateAnswers();
+ updateUI();
+}
+
+function generateAnswers(){
+ answers = [];
+ let current = shuffled[currentIndex];
+
+ // lấy 3 đáp án sai KHÔNG TRÙNG
+ let wrongs = vocab.filter(v => v.a !== current.a).sort(()=>Math.random()-0.5).slice(0,3);
+ let all = [current.a, ...wrongs.map(w=>w.a)].sort(()=>Math.random()-0.5);
+
+ for(let i=0;i<4;i++){
+  answers.push({ x:200+i*180, y:420, text:all[i], correct:(all[i]===current.a), index:i+1 });
+ }
+}
+
+function updateUI(){
+ document.getElementById("ui").innerText = `🐔 Hường cute | Câu ${currentIndex+1}/10 | ${shuffled[currentIndex].q} | ❤️ ${lives}`;
+}
+
+function drawBackground(){
+ // trời
+ ctx.fillStyle="#87CEEB";
+ ctx.fillRect(0,0,canvas.width,canvas.height);
+
+ // mây
+ ctx.fillStyle="white";
+ for(let i=0;i<5;i++){
+  ctx.beginPath();
+  ctx.arc(100+i*300,80,30,0,Math.PI*2);
+  ctx.arc(130+i*300,80,40,0,Math.PI*2);
+  ctx.fill();
+ }
+
+ // cỏ
+ ctx.fillStyle="#2ecc71";
+ ctx.fillRect(0,350,canvas.width,50);
+}
+
+function drawPlayer(){
+ ctx.font = "30px Arial";
+ ctx.fillText("Hường cute", player.x-20, player.y-20);
+ ctx.font = "40px Arial";
+ ctx.fillText("🐔", player.x, player.y);
+}
+
+function drawObstacle(){
+ ctx.fillStyle="black";
+ ctx.fillRect(player.x+80, 330, 20, 20);
+}
+
+function drawAnswers(){
+ ctx.font="14px Arial";
+ answers.forEach(a=>{
+  ctx.fillStyle="#2ecc71";
+  ctx.fillRect(a.x, a.y, 150, 45);
+  ctx.fillStyle="black";
+  ctx.fillText(`${a.index}. ${a.text}`, a.x+5, a.y-5);
+ });
+}
+
+function update(){
+ drawBackground();
+
+ if(jumping){
+  jumpProgress += 0.05;
+  player.y = 300 - Math.sin(jumpProgress*Math.PI)*100;
+  player.x += direction*4;
+
+  if(jumpProgress >= 1){
+    jumping = false;
+    jumpProgress = 0;
+    player.y = 300;
+    newQuestion();
+  }
+ }
+
+ drawObstacle();
+ drawPlayer();
+ drawAnswers();
+ requestAnimationFrame(update);
+}
+
+window.addEventListener("keydown", e=>{
+ let choice = null;
+ if(e.key==="1") choice=1;
+ if(e.key==="2") choice=2;
+ if(e.key==="3") choice=3;
+ if(e.key==="4") choice=4;
+
+ if(choice && !jumping){
+  let selected = answers.find(a=>a.index===choice);
+
+  if(selected.correct){
+    direction = 1;
+    currentIndex++;
+  } else {
+    direction = -1;
+    lives--;
+  }
+
+  jumping = true;
+ }
+});
+
+newQuestion();
+update();
+</script>
+</body>
+</html>
+
